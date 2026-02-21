@@ -1,13 +1,16 @@
 :root {
-    --primary: #4f46e5;
-    --primary-hover: #4338ca;
-    --bg-dark: #0f172a;
-    --card-bg: rgba(30, 41, 59, 0.7);
-    --text-main: #f8fafc;
-    --text-muted: #94a3b8;
-    --accent: #10b981;
-    --glass-border: rgba(255, 255, 255, 0.1);
-    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    --primary: #0F9D9A;
+    --primary-hover: #0A7A78;
+    --bg-dark: #d6f0ee;
+    --card-bg: rgba(255, 255, 255, 0.8);
+    --text-main: #0e3835;
+    --text-muted: #3a8a87;
+    --accent: #e8614f;
+    --glass-border: rgba(15, 157, 154, 0.25);
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.12);
+    --coral: #e8614f;
+    --coral-light: #FFBCBE;
+    --teal-light: #0F9D9A;
 }
 
 * {
@@ -18,10 +21,9 @@
 
 body {
     font-family: 'Outfit', sans-serif;
-    background: var(--bg-dark);
+    background: linear-gradient(135deg, #c8ebe9 0%, #e4f6f5 50%, #f0fafa 100%);
     color: var(--text-main);
     overflow: hidden;
-    /* Use flex container for scrolling if needed */
     height: 100vh;
     display: flex;
     justify-content: center;
@@ -47,15 +49,17 @@ header {
 header h1 {
     font-size: 2.5rem;
     font-weight: 600;
-    background: linear-gradient(to right, #818cf8, #34d399);
+    background: linear-gradient(to right, var(--teal-light), var(--coral));
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
     margin-bottom: 0.25rem;
+    letter-spacing: -0.5px;
 }
 
 header p {
     color: var(--text-muted);
-    font-weight: 300;
+    font-weight: 400;
 }
 
 #search-section {
@@ -70,16 +74,17 @@ header p {
     width: 100%;
     display: flex;
     align-items: center;
-    background: var(--card-bg);
-    border: 1px solid var(--glass-border);
+    background: rgba(255, 255, 255, 0.9);
+    border: 1.5px solid var(--glass-border);
     border-radius: 12px;
     padding: 0.5rem 1rem;
     transition: all 0.3s ease;
+    box-shadow: 0 2px 12px rgba(15, 157, 154, 0.1);
 }
 
 .search-container:focus-within {
     border-color: var(--primary);
-    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+    box-shadow: 0 0 0 2px rgba(15, 157, 154, 0.25);
 }
 
 .search-icon {
@@ -95,6 +100,10 @@ header p {
     font-family: inherit;
     font-size: 1rem;
     outline: none;
+}
+
+#hospital-search::placeholder {
+    color: #7ecece;
 }
 
 #search-results {
@@ -119,7 +128,7 @@ header p {
 }
 
 .search-result-item:hover {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(15, 157, 154, 0.08);
 }
 
 .result-name {
@@ -147,9 +156,9 @@ main {
 
 #map {
     border-radius: 20px;
-    border: 1px solid var(--glass-border);
+    border: 1.5px solid var(--glass-border);
     box-shadow: var(--glass-shadow);
-    background: #1e293b;
+    background: #e8f6f5;
     z-index: 1;
 }
 
@@ -223,15 +232,16 @@ footer {
 
 /* Leaflet Overrides */
 .leaflet-container {
-    background: #0f172a !important;
+    background: #e8f6f5 !important;
 }
 
 .leaflet-popup-content-wrapper,
 .leaflet-popup-tip {
-    background: rgba(30, 41, 59, 1);
-    color: white;
+    background: rgba(255, 255, 255, 0.97);
+    color: var(--text-main);
     backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 4px 20px rgba(15, 157, 154, 0.15);
 }
 
 .leaflet-bar a {
@@ -240,16 +250,38 @@ footer {
     border-bottom: 1px solid var(--glass-border) !important;
 }
 
+.leaflet-control-custom {
+    background-color: var(--card-bg) !important;
+    color: var(--text-main) !important;
+    border: 1px solid var(--glass-border) !important;
+    border-radius: 4px !important;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.leaflet-control-custom:hover {
+    background-color: rgba(255, 255, 255, 0.95) !important;
+    color: var(--primary) !important;
+}
+
+.leaflet-control-custom:active {
+    transform: scale(0.95);
+}
+
+.leaflet-control-custom svg {
+    stroke: currentColor;
+}
+
 /* Custom Tooltip */
 .county-tooltip {
-    background: rgba(15, 23, 42, 0.9);
+    background: rgba(255, 255, 255, 0.97);
     border: 1px solid var(--glass-border);
     border-radius: 8px;
-    color: white;
+    color: var(--text-main);
     padding: 8px 12px;
     font-family: 'Outfit', sans-serif;
     font-size: 0.9rem;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(15, 157, 154, 0.2);
 }
 
 .maternal-facilities-list {
@@ -265,7 +297,7 @@ footer {
 }
 
 .facility-pill {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(15, 157, 154, 0.07);
     border-radius: 10px;
     padding: 0.75rem 1rem;
     margin-bottom: 0.75rem;
@@ -275,23 +307,27 @@ footer {
 
 .facility-pill:hover {
     transform: translateX(5px);
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(15, 157, 154, 0.13);
 }
 
 .facility-pill.level-I {
-    border-left-color: #3b82f6;
+    border-left-color: var(--teal-light);
 }
 
 .facility-pill.level-II {
-    border-left-color: #10b981;
+    border-left-color: var(--primary);
 }
 
 .facility-pill.level-III {
-    border-left-color: #f59e0b;
+    border-left-color: #FFD699;
 }
 
 .facility-pill.level-IV {
-    border-left-color: #ef4444;
+    border-left-color: var(--coral);
+}
+
+.facility-pill.level-none {
+    border-left-color: #a0b4b3;
 }
 
 .facility-detail {
