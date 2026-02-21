@@ -3,15 +3,61 @@
 const GEORGIA_FIPS = '13';
 const GEOJSON_URL = 'https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json';
 
-// Initialize Map
-const map = L.map('map').setView([32.8381, -83.6347], 7);
+// Initialize Map with constraints
+const georgiaBounds = L.latLngBounds(
+    L.latLng(30.355, -85.605), // Southwest
+    L.latLng(35.000, -80.751)  // Northeast
+);
 
-// Dark Theme Tiles
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+const map = L.map('map', {
+    maxBounds: georgiaBounds,
+    maxBoundsViscosity: 1.0,
+    zoomSnap: 0.1
+});
+
+// Fit the map to Georgia's bounds and set that as the minimum zoom limit
+map.fitBounds(georgiaBounds);
+map.setMinZoom(map.getZoom());
+
+// Light Theme Tiles
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
     subdomains: 'abcd',
     maxZoom: 20
 }).addTo(map);
+
+// Custom Reset Control
+const ResetControl = L.Control.extend({
+    options: {
+        position: 'topleft'
+    },
+    onAdd: function (map) {
+        const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
+        container.style.backgroundColor = 'white';
+        container.style.width = '34px';
+        container.style.height = '34px';
+        container.style.display = 'flex';
+        container.style.justifyContent = 'center';
+        container.style.alignItems = 'center';
+        container.style.cursor = 'pointer';
+        container.title = 'Center Map';
+
+        container.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                <path d="M3 3v5h5"/>
+            </svg>
+        `;
+
+        container.onclick = function () {
+            map.fitBounds(georgiaBounds);
+        };
+
+        return container;
+    }
+});
+
+map.addControl(new ResetControl());
 
 let geojson;
 let clickedLayer;
@@ -22,21 +68,21 @@ let maternalHospitals = [];
 // Style for counties
 function style(feature) {
     return {
-        fillColor: '#4f46e5',
+        fillColor: '#0F9D9A',
         weight: 1,
         opacity: 1,
-        color: 'rgba(255, 255, 255, 0.2)',
-        fillOpacity: 0.2
+        color: 'rgba(10, 122, 120, 0.4)',
+        fillOpacity: 0.15
     };
 }
 
 // Function to highlight a feature
 function highlightFeature(layer) {
     layer.setStyle({
-        weight: 2,
-        color: '#818cf8',
-        fillOpacity: 0.7,
-        fillColor: '#6366f1'
+        weight: 2.5,
+        color: '#e8614f',
+        fillOpacity: 0.45,
+        fillColor: '#0F9D9A'
     });
     layer.bringToFront();
 }
@@ -72,25 +118,25 @@ function updateInfoPanel(props) {
     const panel = document.getElementById('info-content');
     panel.innerHTML = `
         <div class="county-info">
-            <h2>${props.NAME} County</h2>
+            <h2 style="color: var(--accent); font-size: 2.2rem; margin-bottom: 1.5rem;">${props.NAME} County</h2>
             <div class="info-grid">
                 <div class="info-item">
-                    <span class="info-label">State</span>
+                    <span class="info-label" style="color: var(--primary); font-weight: 600;">STATE</span>
                     <span class="info-value">Georgia</span>
                 </div>
                 <div class="info-item">
-                    <span class="info-label">FIPS Code</span>
+                    <span class="info-label" style="color: var(--primary); font-weight: 600;">FIPS CODE</span>
                     <span class="info-value">${props.STATE}${props.COUNTY}</span>
                 </div>
                 <div class="info-item">
-                    <span class="info-label">Type</span>
+                    <span class="info-label" style="color: var(--primary); font-weight: 600;">TYPE</span>
                     <span class="info-value">${props.LSAD}</span>
                 </div>
             </div>
             <div class="maternal-facilities-list">
-                <h3>Maternal Care Facilities</h3>
+                <h3 style="color: var(--primary); opacity: 0.8; margin-top: 2rem;">MATERNAL CARE FACILITIES</h3>
                 <div id="county-facilities-list">
-                    Searching for facilities in this county...
+                    Searching for facilities...
                 </div>
             </div>
         </div>
@@ -102,9 +148,9 @@ function updateInfoPanel(props) {
 
     if (facilities.length > 0) {
         listDiv.innerHTML = facilities.map(f => `
-            <div class="facility-pill level-${f.level.replace('Level ', '').trim()}">
+            <div class="facility-pill level-${f.level ? f.level.replace('Level ', '') : 'none'}">
                 <strong>${f.name}</strong><br>
-                <small>${f.level}</small>
+                <small>${f.level ? f.level : 'Undesignated'}</small>
             </div>
         `).join('');
     } else {
@@ -189,32 +235,51 @@ async function loadData() {
 
 function parseMaternalCSV(text) {
     const lines = text.split('\n');
-    let currentLevel = '';
     const results = [];
 
-    for (let line of lines) {
-        line = line.trim();
+    for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
         if (!line) continue;
 
-        if (line.startsWith('Level ')) {
-            currentLevel = line.split(',')[0].trim();
-            continue;
-        }
-
-        if (line.startsWith('Facility Name')) continue;
-
-        // Handle quoted addresses
+        // Handle quoted fields
         const parts = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
         if (parts.length >= 2) {
-            results.push({
-                name: parts[0].trim(),
-                county: parts[1].trim(),
-                address: parts[2] ? parts[2].replace(/"/g, '').trim() : '',
-                level: currentLevel
-            });
+            const name = parts[0].replace(/"/g, '').trim();
+            const county = parts[1].replace(/"/g, '').trim();
+            const levelRaw = parts[2] ? parts[2].replace(/"/g, '').trim() : '';
+            const levelMap = { '1': 'Level I', '2': 'Level II', '3': 'Level III', '4': 'Level IV' };
+            const level = levelMap[levelRaw] || '';
+
+            if (name && county) {
+                results.push({ name, county, level, address: '' });
+            }
         }
     }
     return results;
+}
+
+function createPinIcon(color) {
+    const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="36" height="42" viewBox="0 0 36 42">
+      <!-- Shadow base -->
+      <ellipse cx="18" cy="39" rx="8" ry="3" fill="#c8e8e7" opacity="0.7"/>
+      <!-- Pin body -->
+      <path d="M18 2 C9.163 2 2 9.163 2 18 C2 28.5 18 40 18 40 C18 40 34 28.5 34 18 C34 9.163 26.837 2 18 2 Z"
+            fill="${color}" stroke="#333" stroke-width="2"/>
+      <!-- Inner white circle -->
+      <circle cx="18" cy="17" r="9" fill="#fff8f7" stroke="#333" stroke-width="1.5"/>
+      <!-- Cross horizontal -->
+      <rect x="11" y="14.5" width="14" height="5" rx="2" fill="${color}" stroke="#333" stroke-width="1"/>
+      <!-- Cross vertical -->
+      <rect x="15.5" y="10" width="5" height="14" rx="2" fill="${color}" stroke="#333" stroke-width="1"/>
+    </svg>`;
+    return L.divIcon({
+        html: svg,
+        className: '',
+        iconSize: [36, 42],
+        iconAnchor: [18, 40],
+        popupAnchor: [0, -40]
+    });
 }
 
 function processMaternalMarkers() {
@@ -230,13 +295,8 @@ function processMaternalMarkers() {
             mh.lon = osm.center ? osm.center.lon : osm.lon;
 
             const color = getLevelColor(mh.level);
-            const marker = L.circleMarker([mh.lat, mh.lon], {
-                radius: 8,
-                fillColor: color,
-                color: '#fff',
-                weight: 2,
-                opacity: 1,
-                fillOpacity: 0.8
+            const marker = L.marker([mh.lat, mh.lon], {
+                icon: createPinIcon(color)
             });
 
             marker.bindTooltip(`<strong>${mh.name}</strong><br>${mh.level}`, { direction: 'top' });
@@ -252,10 +312,11 @@ function processMaternalMarkers() {
 }
 
 function getLevelColor(level) {
-    if (level.includes('IV')) return '#ef4444'; // Red
-    if (level.includes('III')) return '#f59e0b'; // Amber
-    if (level.includes('II')) return '#10b981'; // Green
-    return '#3b82f6'; // Blue for Level I
+    if (level === 'Level IV') return '#e8614f';  // Coral
+    if (level === 'Level III') return '#f59e0b'; // Amber
+    if (level === 'Level II') return '#0F9D9A';  // Teal
+    if (level === 'Level I') return '#66D4D1';   // Light teal
+    return '#a0b4b3'; // Neutral gray-teal for undesignated
 }
 
 function selectHospital(mh) {
@@ -290,14 +351,18 @@ function selectHospital(mh) {
 function updateInfoPanelWithHospital(mh) {
     const panel = document.getElementById('info-content');
     const existingHTML = panel.innerHTML;
+
+    // Clear previous details if any to avoid stacking multiple hospital cards
+    const cleanHTML = existingHTML.split('<div class="facility-detail')[0];
+
     panel.innerHTML = `
-        <div class="facility-detail glass-panel">
-            <h3 style="color: var(--accent);">${mh.name}</h3>
-            <p><strong>Care Level:</strong> ${mh.level}</p>
-            <p><strong>Address:</strong> ${mh.address}</p>
+        <div class="facility-detail" style="background: white; border: 1px solid var(--accent); border-radius: 20px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: var(--shadow);">
+            <h3 style="color: var(--accent); margin-bottom: 0.5rem; font-size: 1.4rem;">${mh.name}</h3>
+            <p><strong>Care Level:</strong> ${mh.level || 'Undesignated'}</p>
+            <p><strong>Address:</strong> ${mh.address || 'Not Available'}</p>
             <p><strong>County:</strong> ${mh.county}</p>
         </div>
-        ${existingHTML}
+        ${cleanHTML}
     `;
 }
 
@@ -370,4 +435,36 @@ function setupSearch() {
     });
 }
 
+// Tab Switching Logic
+function setupTabs() {
+    const navLinks = document.querySelectorAll('.nav-links li');
+    const tabs = document.querySelectorAll('.tab-content');
+
+    navLinks.forEach(link => {
+        link.addEventListener('click', () => {
+            const tabId = link.getAttribute('data-tab');
+
+            // Update Active Link
+            navLinks.forEach(l => l.classList.remove('active'));
+            link.classList.add('active');
+
+            // Switch Content
+            tabs.forEach(tab => {
+                tab.classList.remove('active');
+                if (tab.id === `${tabId}-tab`) {
+                    tab.classList.add('active');
+                }
+            });
+
+            // Fix Leaflet sizing if switching back to map
+            if (tabId === 'home') {
+                setTimeout(() => {
+                    map.invalidateSize();
+                }, 100);
+            }
+        });
+    });
+}
+
 loadData();
+setupTabs();

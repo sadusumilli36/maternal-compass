@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive Georgia County Map</title>
+    <title>MaternalCompass - Georgia Explorer</title>
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
@@ -18,46 +18,114 @@
 
 <body>
     <div class="app-container">
-        <header>
-            <h1>Georgia County Explorer</h1>
-            <p>Hover to highlight, click for details</p>
-
-            <div id="search-section">
-                <div class="search-container">
-                    <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
-                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                        stroke-linejoin="round">
-                        <circle cx="11" cy="11" r="8" />
-                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                    </svg>
-                    <input type="text" id="hospital-search" placeholder="Search hospitals or counties..."
-                        autocomplete="off">
-                </div>
-                <div id="search-results" class="glass-panel hidden"></div>
+        <nav class="main-nav">
+            <div class="nav-brand">
+                <img src="logo.png" alt="MaternalCompass Logo" class="nav-logo">
+                <span class="brand-gradient">MaternalCompass</span>
             </div>
-        </header>
+            <ul class="nav-links">
+                <li class="active" data-tab="home">Home</li>
+                <li data-tab="about">About</li>
+                <li data-tab="add">Add Centre</li>
+            </ul>
+        </nav>
 
-        <main>
-            <div id="map"></div>
+        <!-- Home Tab -->
+        <section id="home-tab" class="tab-content active">
+            <header>
+                <h1>
+                    <span class="brand-gradient">MaternalCompass</span>
+                </h1>
+                <p>Click on any county to view detailed statistics and health facility access data.</p>
 
-            <div id="info-panel" class="glass-panel">
-                <div id="info-content">
-                    <div class="placeholder-msg">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10" />
-                            <path d="M12 16v-4" />
-                            <path d="M12 8h.01" />
+                <div id="search-section">
+                    <div class="search-container">
+                        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8" />
+                            <line x1="21" y1="21" x2="16.65" y2="16.65" />
                         </svg>
-                        <h3>Select a County</h3>
-                        <p>Click on the map to see specific information about a county in Georgia.</p>
+                        <input type="text" id="hospital-search" placeholder="Search hospitals or counties..."
+                            autocomplete="off">
+                    </div>
+                    <div id="search-results" class="glass-panel hidden"></div>
+                </div>
+            </header>
+
+            <main>
+                <div id="map"></div>
+
+                <div id="info-panel" class="glass-panel">
+                    <div id="info-content">
+                        <div class="placeholder-msg">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10" />
+                                <path d="M12 16v-4" />
+                                <path d="M12 8h.01" />
+                            </svg>
+                            <h3>Select a County</h3>
+                            <p>Click on the map to see specific information about a county in Georgia.</p>
+                        </div>
                     </div>
                 </div>
+            </main>
+        </section>
+
+        <!-- About Tab -->
+        <section id="about-tab" class="tab-content">
+            <article class="about-container glass-panel">
+                <h2>About MaternalCompass</h2>
+                <div class="about-grid">
+                    <div class="about-text">
+                        <p><strong>MaternalCompass</strong> is a data-driven visualization tool
+                            designed to help families and healthcare professionals locate and understand the maternal
+                            care resources available across Georgia.</p>
+                        <p>By integrating official maternal care facility listings with precise geographic data, this
+                            project aims to provide transparency into the different levels of care (I-IV) provided by
+                            Georgia's birthing centers.</p>
+                        <h3>Key Objectives</h3>
+                        <ul>
+                            <li><strong>Accessibility</strong>: Pinpoint care facilities with accurate coordinates and
+                                addresses.</li>
+                            <li><strong>Education</strong>: Explain and visualize the Levels of Care (I through IV) to
+                                help families find the most appropriate facility.</li>
+                            <li><strong>Insight</strong>: Highlight county-level resource distribution to identify areas
+                                of high or low coverage.</li>
+                        </ul>
+                    </div>
+                    <div class="about-stats">
+                        <div class="stat-card">
+                            <span class="stat-value">159</span>
+                            <span class="stat-label">Counties Tracked</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-value">60+</span>
+                            <span class="stat-label">Facilities Mapped</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-value">IV</span>
+                            <span class="stat-label">Highest Care Level</span>
+                        </div>
+                    </div>
+                </div>
+            </article>
+        </section>
+
+        <!-- Add Centre Tab -->
+        <section id="add-tab" class="tab-content">
+            <div class="placeholder-container glass-panel">
+                <h2>Add a New Centre</h2>
+                <p>This feature is coming soon! Users will be able to submit new maternal care facilities for review and
+                    inclusion in the map.</p>
+                <div class="coming-soon-badge">Placeholder</div>
             </div>
-        </main>
+        </section>
 
         <footer>
-            <p>Data source: US Census Bureau | Interactive Map by Antigravity</p>
+            <p>Data source: US Census Bureau | MaternalCompass by Antigravity</p>
         </footer>
     </div>
 
