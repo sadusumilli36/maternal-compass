@@ -1,0 +1,37 @@
+# Local environment and secrets
+.env
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Generated caches (can be rebuilt by running the pipeline)
+output/facility_latlon_cache.json
+output/county_latlon_cache.json
+output/zip_latlon_cache.json
+output/zip_nearest_distance_cache.json
+output/facility_address_cache.json
+
+# Optional: uncomment to exclude generated output (users run pipeline to create)
+# output/*.csv
+# output/*.json
+# output/*.xlsx
+# output/*.geojson
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
