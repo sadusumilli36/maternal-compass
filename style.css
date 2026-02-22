@@ -135,20 +135,13 @@ header {
 }
 
 header h1 {
-    font-size: 2.8rem;
+    font-size: 4rem;
     font-weight: 600;
-    display: flex !important;
-    flex-direction: row !important;
-    flex-wrap: nowrap;
+    display: flex;
+    flex-direction: row;
     justify-content: center;
     align-items: center;
     gap: 1rem;
-    margin: 1.5rem 0 0.5rem 0;
-}
-
-header h1 {
-    font-size: 4rem;
-    font-weight: 600;
     margin: 2.5rem 0 0.5rem 0;
 }
 
@@ -535,6 +528,150 @@ footer {
         opacity: 1;
         transform: translateY(0);
     }
+}
+
+/* Expansion Map Section */
+.expansion-container {
+    /* Rely on 'main' tag styles for grid and height */
+    grid-template-columns: 380px 1fr;
+    /* Override main to reverse order */
+    overflow: hidden;
+}
+
+#expansion-map {
+    border-radius: 24px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    background: #f0f4f8;
+    z-index: 1;
+    min-height: 0;
+    height: 100%;
+    /* Fill the grid area */
+}
+
+#expansion-sidebar {
+    display: flex;
+    flex-direction: column;
+    padding: 1.5rem;
+    overflow-y: auto;
+    min-height: 0;
+    height: 100%;
+}
+
+.expansion-card-header {
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.expansion-card-header h2 {
+    color: var(--accent);
+    font-size: 1.8rem;
+    margin-bottom: 0.5rem;
+}
+
+.beds-needed {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--primary);
+    background: rgba(15, 157, 154, 0.1);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    display: inline-block;
+}
+
+.add-center-section {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.add-center-section h3 {
+    color: var(--text-main);
+    margin-bottom: 1rem;
+    font-size: 1.3rem;
+}
+
+.draggable-pin {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    width: 60px;
+    height: 60px;
+    background: white;
+    border-radius: 50%;
+    box-shadow: var(--shadow);
+    margin-bottom: 1.5rem;
+    cursor: grab;
+    transition: transform 0.2s ease;
+    border: 2px solid var(--primary);
+}
+
+.draggable-pin:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(15, 157, 154, 0.2);
+}
+
+.draggable-pin svg {
+    color: var(--primary);
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+    gap: 0.5rem;
+}
+
+.input-group label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.input-group input {
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 1rem;
+    background: white;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+.input-group input:focus {
+    border-color: var(--primary);
+}
+
+.risk-comparison {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem;
+}
+
+.risk-box {
+    text-align: center;
+}
+
+.risk-box .label {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+}
+
+.risk-box .value {
+    font-size: 1.1rem;
+    font-weight: 600;
 }
 
 @media (max-width: 900px) {

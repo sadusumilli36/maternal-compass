@@ -12,7 +12,8 @@ const georgiaBounds = L.latLngBounds(
 const map = L.map('map', {
     maxBounds: georgiaBounds,
     maxBoundsViscosity: 1.0,
-    zoomSnap: 0.1
+    zoomSnap: 0.1,
+    keyboard: false
 });
 
 // Fit the map to Georgia's bounds and set that as the minimum zoom limit
@@ -49,7 +50,9 @@ const ResetControl = L.Control.extend({
             </svg>
         `;
 
-        container.onclick = function () {
+        container.onclick = function (e) {
+            e.preventDefault();
+            e.stopPropagation();
             map.fitBounds(georgiaBounds);
         };
 
@@ -58,6 +61,162 @@ const ResetControl = L.Control.extend({
 });
 
 map.addControl(new ResetControl());
+
+// Expansion Plan Initialization
+let expansionMap;
+let expansionData = {}; // Store data by county name
+let activeExpansionCounty = null;
+let expansionGeoJsonLayer;
+
+// Home Page County Data
+let homeCountyData = {};
+let hospitalMetrics = {}; // Store metrics from hospital_data.csv
+
+function initExpansionMap() {
+    if (!expansionMap) {
+        expansionMap = L.map('expansion-map', {
+            maxBounds: georgiaBounds,
+            maxBoundsViscosity: 1.0,
+            zoomSnap: 0.1,
+            keyboard: false
+        });
+
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+            subdomains: 'abcd',
+            maxZoom: 20
+        }).addTo(expansionMap);
+
+        expansionMap.addControl(new ResetControl());
+
+        // Load data first, then render geojson if available
+        loadExpansionData().then(() => {
+            if (geojson) {
+                renderExpansionCounties();
+            }
+        });
+
+        expansionMap.fitBounds(georgiaBounds);
+        expansionMap.setMinZoom(expansionMap.getZoom());
+
+        // Handle window resize for this specific map
+        window.addEventListener('resize', () => {
+            if (document.getElementById('add-tab').classList.contains('active')) {
+                expansionMap.invalidateSize();
+                expansionMap.fitBounds(georgiaBounds);
+            }
+        });
+
+    } else {
+        setTimeout(() => {
+            expansionMap.invalidateSize();
+        }, 100);
+    }
+}
+
+async function loadExpansionData() {
+    try {
+        const response = await fetch('county_expansion_data.csv');
+        const text = await response.text();
+        const lines = text.split('\n');
+
+        expansionData = {};
+        for (let i = 1; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue;
+
+            // County,Beds Needed,Old Risk
+            const parts = line.split(',');
+            if (parts.length >= 3) {
+                const county = parts[0].trim();
+                expansionData[county] = {
+                    bedsNeeded: parts[1].trim(),
+                    oldRisk: parts[2].trim()
+                };
+            }
+        }
+    } catch (err) {
+        console.error('Error loading expansion data:', err);
+    }
+}
+
+function renderExpansionCounties() {
+    // Similar to home map, but specific to Expansion interactions
+    expansionGeoJsonLayer = L.geoJson(geojson.toGeoJSON(), {
+        style: style,
+        onEachFeature: function (feature, layer) {
+            // Hover Tooltip
+            layer.bindTooltip(feature.properties.NAME, {
+                className: 'county-tooltip',
+                sticky: true,
+                direction: 'top',
+                offset: [0, -10]
+            });
+
+            // Click to populate sidebar
+            layer.on({
+                click: (e) => selectExpansionCounty(e.target, feature.properties.NAME)
+            });
+        }
+    }).addTo(expansionMap);
+}
+
+function selectExpansionCounty(layer, countyName) {
+    if (activeExpansionCounty) {
+        // Reset old layer style
+        expansionGeoJsonLayer.resetStyle(activeExpansionCounty);
+    }
+
+    // Highlight new layer
+    highlightFeature(layer);
+    activeExpansionCounty = layer;
+
+    // Zoom to county
+    expansionMap.fitBounds(layer.getBounds(), {
+        padding: [50, 50],
+        maxZoom: 10,
+        animate: true
+    });
+
+    // Populate Sidebar
+    const data = expansionData[countyName] || { bedsNeeded: 'Unknown', oldRisk: 'Unknown' };
+
+    const sidebarContent = document.getElementById('expansion-sidebar-content');
+    sidebarContent.innerHTML = `
+        <div class="expansion-card-header">
+            <h2>${countyName} County</h2>
+            <div class="beds-needed">Beds Needed: ${data.bedsNeeded}</div>
+        </div>
+
+        <div class="add-center-section">
+            <h3>Add Center</h3>
+            <div class="draggable-pin" title="Drag to map (Coming Soon)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                    <circle cx="12" cy="10" r="3"></circle>
+                </svg>
+            </div>
+            
+            <div class="input-group">
+                <label for="new-beds">Number of Beds:</label>
+                <input type="number" id="new-beds" placeholder="Enter planned beds..." min="0">
+            </div>
+        </div>
+
+        <div class="risk-comparison">
+            <div class="risk-box">
+                <span class="label">Old Risk</span>
+                <span class="value risk-${data.oldRisk}" style="padding: 0.2rem 0.5rem; border-radius: 4px; display: inline-block;">${data.oldRisk}</span>
+            </div>
+            <div class="risk-box">
+                <span class="label">Updated Risk</span>
+                <span class="value" style="color: var(--text-muted); font-weight: normal;">&mdash;</span>
+            </div>
+        </div>
+    `;
+
+    // Optionally handle input change to calculate updated risk here
+}
 
 let geojson;
 let clickedLayer;
@@ -116,25 +275,40 @@ function selectCounty(layer, props, skipZoom = false) {
 
 function updateInfoPanel(props) {
     const panel = document.getElementById('info-content');
+    const countyName = props.NAME;
+    const data = homeCountyData[countyName] || {};
+
+    const levelRaw = data.level || 'Unknown';
+    const distRaw = data.avgDistance || 'N/A';
+    const bedsRaw = data.obBeds || '0';
+    const careRaw = data.noPrenatalCare || 'N/A';
+
     panel.innerHTML = `
         <div class="county-info">
-            <h2 style="color: var(--accent); font-size: 2.2rem; margin-bottom: 1.5rem;">${props.NAME} County</h2>
-            <div class="info-grid">
+            <h2 style="color: var(--accent); font-size: 2.2rem; margin-bottom: 0.25rem;">${countyName} County</h2>
+            <p style="color: var(--text-muted); font-size: 1rem; margin-bottom: 2rem;">FIPS Code: ${props.STATE}${props.COUNTY}</p>
+            
+            <div class="info-grid" style="margin-bottom: 2rem;">
                 <div class="info-item">
-                    <span class="info-label" style="color: var(--primary); font-weight: 600;">STATE</span>
-                    <span class="info-value">Georgia</span>
+                    <span class="info-label" style="color: var(--primary); font-weight: 600; font-size: 0.8rem; letter-spacing: 0.5px;">LEVEL OF RISK</span>
+                    <span class="info-value" style="font-size: 1.1rem; color: var(--text);">${levelRaw}</span>
                 </div>
                 <div class="info-item">
-                    <span class="info-label" style="color: var(--primary); font-weight: 600;">FIPS CODE</span>
-                    <span class="info-value">${props.STATE}${props.COUNTY}</span>
+                    <span class="info-label" style="color: var(--primary); font-weight: 600; font-size: 0.8rem; letter-spacing: 0.5px;">AVG DISTANCE TO HOSPITAL</span>
+                    <span class="info-value" style="font-size: 1.1rem; color: var(--text);">${distRaw !== 'N/A' ? distRaw + ' miles' : 'N/A'}</span>
                 </div>
                 <div class="info-item">
-                    <span class="info-label" style="color: var(--primary); font-weight: 600;">TYPE</span>
-                    <span class="info-value">${props.LSAD}</span>
+                    <span class="info-label" style="color: var(--primary); font-weight: 600; font-size: 0.8rem; letter-spacing: 0.5px;">OBSTETRIC BEDS</span>
+                    <span class="info-value" style="font-size: 1.1rem; color: var(--text);">${bedsRaw}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label" style="color: var(--primary); font-weight: 600; font-size: 0.8rem; letter-spacing: 0.5px;">LATE/NO PRENATAL CARE</span>
+                    <span class="info-value" style="font-size: 1.1rem; color: var(--text);">${careRaw !== 'N/A' ? careRaw + '%' : 'N/A'}</span>
                 </div>
             </div>
+
             <div class="maternal-facilities-list">
-                <h3 style="color: var(--primary); opacity: 0.8; margin-top: 2rem;">MATERNAL CARE FACILITIES</h3>
+                <h3 style="color: var(--primary); opacity: 0.8; margin-top: 2rem; border-bottom: 2px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 1.5rem;">MATERNAL CARE FACILITIES</h3>
                 <div id="county-facilities-list">
                     Searching for facilities...
                 </div>
@@ -225,11 +399,66 @@ async function loadData() {
         // 4. Match and Map
         processMaternalMarkers();
 
-        // 5. Setup Search
+        // 5. Load county_data.csv for Home sidebar
+        const countyDataResponse = await fetch('county_data.csv');
+        const countyDataText = await countyDataResponse.text();
+        parseHomeCountyData(countyDataText);
+
+        // 6. Load hospital_data.csv for detailed hospital metrics
+        const hospitalDataResponse = await fetch('hospital_data.csv');
+        const hospitalDataText = await hospitalDataResponse.text();
+        parseHospitalMetrics(hospitalDataText);
+
+        // 7. Setup Search
         setupSearch();
 
     } catch (err) {
         console.error('Error loading data:', err);
+    }
+}
+
+function parseHomeCountyData(text) {
+    const lines = text.split('\n');
+    homeCountyData = {};
+
+    // Header format: county,pct_late_no_prenatal_care,pct_births_in_state,state,ob_beds,level,avg_distance_miles,fips,risk_factor
+    // Columns: 0:county, 1:pct_late, 2:pct_births, 3:state, 4:ob_beds, 5:level, 6:avg_distance_miles, 7:fips, 8:risk_factor
+    for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+
+        const parts = line.split(',');
+        if (parts.length >= 7) {
+            const county = parts[0].trim();
+            homeCountyData[county] = {
+                noPrenatalCare: parts[1].trim(),
+                obBeds: parts[4].trim(),
+                level: parts[5].trim(),
+                avgDistance: parts[6].trim()
+            };
+        }
+    }
+}
+
+function parseHospitalMetrics(text) {
+    const lines = text.split('\n');
+    hospitalMetrics = {};
+
+    // Header: Hospital Name,County,Hospital Bed Size,OB Beds,Total Births
+    for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+
+        // Handle quoted fields (e.g., "3,023")
+        const parts = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+        if (parts.length >= 5) {
+            const name = parts[0].replace(/"/g, '').trim();
+            const normalizedName = normalizeHospitalName(name);
+            hospitalMetrics[normalizedName] = {
+                obBeds: parts[3].replace(/"/g, '').trim(),
+                totalBirths: parts[4].replace(/"/g, '').trim()
+            };
+        }
     }
 }
 
@@ -258,6 +487,38 @@ function parseMaternalCSV(text) {
     return results;
 }
 
+function formatAddress(tags) {
+    if (!tags) return '';
+    const housenumber = tags['addr:housenumber'] || '';
+    const street = tags['addr:street'] || '';
+    const city = tags['addr:city'] || '';
+    const postcode = tags['addr:postcode'] || '';
+
+    let addr = [];
+    if (housenumber || street) addr.push(`${housenumber} ${street}`.trim());
+    if (city) addr.push(city);
+    if (postcode) addr.push(postcode);
+
+    return addr.length > 0 ? addr.join(', ') : '';
+}
+
+function normalizeHospitalName(name) {
+    if (!name) return '';
+    return name.toLowerCase()
+        .replace(/st\./g, 'saint')
+        .replace(/st /g, 'saint ')
+        .replace(/hospital/g, '')
+        .replace(/healthcare/g, '')
+        .replace(/medical center/g, '')
+        .replace(/regional/g, '')
+        .replace(/center/g, '')
+        .replace(/[^a-z0-9]/g, ' ') // Replace non-alphanumeric with spaces to avoid merging words
+        .split(/\s+/)
+        .filter(word => word.length > 0)
+        .join(' ')
+        .trim();
+}
+
 function createPinIcon(color) {
     const svg = `
     <svg xmlns="http://www.w3.org/2000/svg" width="36" height="42" viewBox="0 0 36 42">
@@ -284,15 +545,23 @@ function createPinIcon(color) {
 
 function processMaternalMarkers() {
     maternalHospitals.forEach(mh => {
+        const normalizedMhName = normalizeHospitalName(mh.name);
+
         // Find coordinates in OSM data
-        const osm = allHospitals.find(h =>
-            h.tags.name && (h.tags.name.toLowerCase().includes(mh.name.toLowerCase()) ||
-                mh.name.toLowerCase().includes(h.tags.name.toLowerCase()))
-        );
+        const osm = allHospitals.find(h => {
+            if (!h.tags.name) return false;
+            const normalizedOsmName = normalizeHospitalName(h.tags.name);
+
+            // Prevent empty or very short strings from matching everything
+            if (normalizedOsmName.length < 4 || normalizedMhName.length < 4) return false;
+
+            return normalizedOsmName.includes(normalizedMhName) || normalizedMhName.includes(normalizedOsmName);
+        });
 
         if (osm) {
             mh.lat = osm.center ? osm.center.lat : osm.lat;
             mh.lon = osm.center ? osm.center.lon : osm.lon;
+            mh.address = formatAddress(osm.tags);
 
             const color = getLevelColor(mh.level);
             const marker = L.marker([mh.lat, mh.lon], {
@@ -355,12 +624,27 @@ function updateInfoPanelWithHospital(mh) {
     // Clear previous details if any to avoid stacking multiple hospital cards
     const cleanHTML = existingHTML.split('<div class="facility-detail')[0];
 
+    const normalizedName = normalizeHospitalName(mh.name);
+    const metrics = hospitalMetrics[normalizedName] || {};
+    const obBeds = metrics.obBeds || 'N/A';
+    const totalBirths = metrics.totalBirths || 'N/A';
+
     panel.innerHTML = `
         <div class="facility-detail" style="background: white; border: 1px solid var(--accent); border-radius: 20px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: var(--shadow);">
             <h3 style="color: var(--accent); margin-bottom: 0.5rem; font-size: 1.4rem;">${mh.name}</h3>
             <p><strong>Care Level:</strong> ${mh.level || 'Undesignated'}</p>
             <p><strong>Address:</strong> ${mh.address || 'Not Available'}</p>
             <p><strong>County:</strong> ${mh.county}</p>
+            <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div>
+                    <span style="display: block; font-size: 0.75rem; color: var(--primary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Obstetric Beds</span>
+                    <span style="font-size: 1.1rem; color: var(--text);">${obBeds}</span>
+                </div>
+                <div>
+                    <span style="display: block; font-size: 0.75rem; color: var(--primary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Total Births</span>
+                    <span style="font-size: 1.1rem; color: var(--text);">${totalBirths}</span>
+                </div>
+            </div>
         </div>
         ${cleanHTML}
     `;
@@ -461,6 +745,8 @@ function setupTabs() {
                 setTimeout(() => {
                     map.invalidateSize();
                 }, 100);
+            } else if (tabId === 'add') {
+                initExpansionMap();
             }
         });
     });
