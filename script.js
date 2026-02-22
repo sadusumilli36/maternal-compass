@@ -568,7 +568,9 @@ function getRiskGradientFill(layer, level) {
 
     if (!svg.querySelector(`#${gradientId}`)) {
         const baseColor = getRiskColor(level);
-        const lightColor = toGradientLight(baseColor);
+        // Less lightening for moderate to keep it more yellow
+        const lightFactor = normalized === 'moderate' ? 0.15 : 0.45;
+        const lightColor = toGradientLightCustom(baseColor, lightFactor);
         const gradient = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
         gradient.setAttribute('id', gradientId);
         gradient.setAttribute('x1', '0%');
@@ -600,9 +602,13 @@ function getOverlaySvg(layer) {
 }
 
 function toGradientLight(hexColor) {
+    return toGradientLightCustom(hexColor, 0.45);
+}
+
+function toGradientLightCustom(hexColor, lightFactor) {
     const rgb = hexToRgb(hexColor);
     if (!rgb) return hexColor;
-    const mix = (channel) => Math.min(255, Math.round(channel + (255 - channel) * 0.45));
+    const mix = (channel) => Math.min(255, Math.round(channel + (255 - channel) * lightFactor));
     return `rgb(${mix(rgb.r)}, ${mix(rgb.g)}, ${mix(rgb.b)})`;
 }
 
@@ -1176,9 +1182,120 @@ function setupTabs() {
                 }, 100);
             } else if (tabId === 'add') {
                 initExpansionMap();
+            } else if (tabId === 'chatbot') {
+                initChatbot();
             }
         });
     });
+}
+
+// ============================
+// Chatbot Functionality
+// ============================
+
+let chatbotInitialized = false;
+
+async function initChatbot() {
+    if (chatbotInitialized) return;
+    chatbotInitialized = true;
+
+    // Load suggested prompts
+    try {
+        const response = await fetch('/api/suggested-prompts');
+        const data = await response.json();
+        displaySuggestedPrompts(data.prompts);
+    } catch (err) {
+        console.error('Failed to load prompts:', err);
+    }
+    
+    // Wire up input
+    const sendBtn = document.getElementById('send-chat');
+    const input = document.getElementById('chat-input');
+    
+    if (sendBtn && input) {
+        sendBtn.onclick = sendMessage;
+        input.onkeypress = (e) => {
+            if (e.key === 'Enter') sendMessage();
+        };
+    }
+}
+
+function displaySuggestedPrompts(prompts) {
+    const container = document.getElementById('suggested-prompts');
+    if (!container) return;
+    
+    container.innerHTML = prompts.map(prompt => 
+        `<div class="suggested-prompt" onclick="askQuestion(\`${prompt.replace(/`/g, '\\`')}\`)">${prompt}</div>`
+    ).join('');
+}
+
+function askQuestion(question) {
+    const input = document.getElementById('chat-input');
+    if (!input) return;
+    
+    input.value = question;
+    sendMessage();
+}
+
+async function sendMessage() {
+    const input = document.getElementById('chat-input');
+    const messagesDiv = document.getElementById('chat-messages');
+    const sendBtn = document.getElementById('send-chat');
+    
+    if (!input || !messagesDiv) return;
+    
+    const message = input.value.trim();
+    if (!message) return;
+    
+    // Disable input while processing
+    input.disabled = true;
+    if (sendBtn) sendBtn.disabled = true;
+    
+    // Add user message
+    messagesDiv.innerHTML += `<div class="user-message"><strong>You:</strong> ${escapeHtml(message)}</div>`;
+    input.value = '';
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    
+    // Show loading
+    messagesDiv.innerHTML += `<div class="bot-message" id="loading"><strong>MaternalCompass AI:</strong> Thinking...</div>`;
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    
+    try {
+        const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message })
+        });
+        
+        const data = await response.json();
+        const loadingEl = document.getElementById('loading');
+        if (loadingEl) loadingEl.remove();
+        
+        if (data.success) {
+            messagesDiv.innerHTML += `<div class="bot-message"><strong>MaternalCompass AI:</strong> ${escapeHtml(data.response)}</div>`;
+        } else {
+            messagesDiv.innerHTML += `<div class="bot-message"><strong>Error:</strong> ${escapeHtml(data.error)}</div>`;
+        }
+    } catch (err) {
+        const loadingEl = document.getElementById('loading');
+        if (loadingEl) loadingEl.remove();
+        
+        messagesDiv.innerHTML += `<div class="bot-message"><strong>Error:</strong> Failed to connect to chatbot. Make sure the Flask server is running.</div>`;
+        console.error('Chat error:', err);
+    }
+    
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    
+    // Re-enable input
+    input.disabled = false;
+    if (sendBtn) sendBtn.disabled = false;
+    input.focus();
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 loadData();

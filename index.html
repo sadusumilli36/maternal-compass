@@ -26,6 +26,7 @@
             <ul class="nav-links">
                 <li class="active" data-tab="home">Home</li>
                 <li data-tab="add">Expansion Plan</li>
+                <li data-tab="chatbot">Chatbot</li>
                 <li data-tab="about">About</li>
             </ul>
         </nav>
@@ -141,6 +142,31 @@
             </article>
         </section>
 
+        <!-- Chatbot Tab -->
+        <section id="chatbot-tab" class="tab-content">
+            <div class="chatbot-container">
+                <div class="chatbot-header">
+                    <h2>🤖 MaternalCompass AI Assistant</h2>
+                    <p>Ask me anything about maternal healthcare data in Georgia</p>
+                </div>
+                
+                <div class="suggested-prompts" id="suggested-prompts">
+                    <!-- Populated dynamically -->
+                </div>
+                
+                <div class="chat-messages" id="chat-messages">
+                    <div class="bot-message">
+                        <strong>MaternalCompass AI:</strong> Hi! I'm here to help you explore maternal healthcare data in Georgia. Click a suggested question or ask your own!
+                    </div>
+                </div>
+                
+                <div class="chat-input-container">
+                    <input type="text" id="chat-input" placeholder="Ask about counties, hospitals, risk levels..." />
+                    <button id="send-chat">Send</button>
+                </div>
+            </div>
+        </section>
+
         <!-- Expansion Plan Tab -->
         <section id="add-tab" class="tab-content">
             <header>
@@ -166,10 +192,6 @@
                 <div id="expansion-map"></div>
             </main>
         </section>
-
-        <footer>
-            <p>Data source: US Census Bureau</p>
-        </footer>
     </div>
 
     <!-- Leaflet JS -->
