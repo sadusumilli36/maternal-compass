@@ -37,7 +37,7 @@
                     <img src="logo.png" alt="MaternalCompass Logo" class="header-logo">
                     <span class="brand-gradient">MaternalCompass</span>
                 </h1>
-                <p>Click on any county to view detailed statistics and health facility access data.</p>
+                <p>Click on any county or medical center to view relevant statistics. You can also search for a specific county or facility using the search bar.</p>
 
                 <div id="search-section">
                     <div class="search-container">
@@ -53,6 +53,8 @@
                     <div id="search-results" class="glass-panel hidden"></div>
                 </div>
             </header>
+
+            <h2 style="text-align: center; margin: 1.5rem 0 1rem 0; font-size: 1.5rem; color: var(--primary);">Obstetric Map of Georgia</h2>
 
             <main>
                 <div id="map"></div>
@@ -73,6 +75,30 @@
                     </div>
                 </div>
             </main>
+
+            <div style="margin-top: 3rem; padding: 0 5%;">
+                <div class="glass-panel" style="padding: 1.5rem;">
+                    <h3 style="margin: 0 0 1rem 0; color: var(--primary);">Facility Levels</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                        <div>
+                            <p style="margin: 0 0 0.5rem 0; font-weight: 600;">Level I</p>
+                            <p style="margin: 0; color: var(--text-muted);">Basic</p>
+                        </div>
+                        <div>
+                            <p style="margin: 0 0 0.5rem 0; font-weight: 600;">Level II</p>
+                            <p style="margin: 0; color: var(--text-muted);">Specialty</p>
+                        </div>
+                        <div>
+                            <p style="margin: 0 0 0.5rem 0; font-weight: 600;">Level III</p>
+                            <p style="margin: 0; color: var(--text-muted);">Subspecialty</p>
+                        </div>
+                        <div>
+                            <p style="margin: 0 0 0.5rem 0; font-weight: 600;">Level IV</p>
+                            <p style="margin: 0; color: var(--text-muted);">Regional Perinatal Center</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </section>
 
         <!-- About Tab -->
@@ -142,7 +168,7 @@
         </section>
 
         <footer>
-            <p>Data source: US Census Bureau | MaternalCompass by Antigravity</p>
+            <p>Data source: US Census Bureau</p>
         </footer>
     </div>
 

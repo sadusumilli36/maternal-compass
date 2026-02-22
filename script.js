@@ -65,12 +65,48 @@ map.addControl(new ResetControl());
 // Expansion Plan Initialization
 let expansionMap;
 let expansionData = {}; // Store data by county name
+let expansionDataByNormalized = {}; // Store same data by normalized county name
 let activeExpansionCounty = null;
 let expansionGeoJsonLayer;
+let expansionPinMarker = null;
+let expansionPinPlacementEnabled = false;
+let activeCountyRiskData = null;
 
 // Home Page County Data
 let homeCountyData = {};
-let hospitalMetrics = {}; // Store metrics from hospital_data.csv
+let hospitalMetrics = {}; // Store metrics from Updated ob_hospitals_with_level.csv
+
+// Risk calculation constants and functions
+const RISK_THRESHOLDS = {
+    LOW: 0.77,
+    MODERATE: 1.25,
+    HIGH: 2.86
+};
+
+function calculateRiskFactor(prenatalPct, birthsPct, obBeds) {
+    const beds = Math.max(parseInt(obBeds) || 0, 1);
+    return (parseFloat(prenatalPct) * parseFloat(birthsPct)) / beds;
+}
+
+function getRiskLevelFromFactor(riskFactor) {
+    const value = parseFloat(riskFactor);
+    if (value <= RISK_THRESHOLDS.LOW) return 'Low';
+    if (value <= RISK_THRESHOLDS.MODERATE) return 'Moderate';
+    if (value <= RISK_THRESHOLDS.HIGH) return 'High';
+    return 'Very High';
+}
+
+function simulateBedsAndRisk(prenatalPct, birthsPct, currentObBeds, currentRiskFactor, bedsToAdd) {
+    const simulatedBeds = Math.max(parseInt(currentObBeds) || 0, 1) + Math.max(parseInt(bedsToAdd) || 0, 0);
+    const numerator = parseFloat(prenatalPct) * parseFloat(birthsPct);
+    const simulatedRiskFactor = numerator / simulatedBeds;
+    const simulatedLevel = getRiskLevelFromFactor(simulatedRiskFactor);
+    return {
+        simulatedBeds,
+        simulatedRiskFactor: parseFloat(simulatedRiskFactor.toFixed(3)),
+        simulatedLevel
+    };
+}
 
 function initExpansionMap() {
     if (!expansionMap) {
@@ -96,6 +132,10 @@ function initExpansionMap() {
             }
         });
 
+        expansionMap.on('click', (e) => {
+            placeExpansionPin(e.latlng);
+        });
+
         expansionMap.fitBounds(georgiaBounds);
         expansionMap.setMinZoom(expansionMap.getZoom());
 
@@ -116,13 +156,30 @@ function initExpansionMap() {
 
 async function loadExpansionData() {
     try {
-        const response = await fetch('county_expansion_data.csv');
-        const text = await response.text();
-        const lines = text.split('\n');
+        const [expansionResponse, increaseResponse, lowRiskResponse, countyDataResponse] = await Promise.all([
+            fetch('county_expansion_data.csv'),
+            fetch('county_increase_10yr.csv'),
+            fetch('beds_needed_for_low_risk_by_county(in).csv'),
+            fetch('county_data.csv')
+        ]);
+
+        const expansionText = await expansionResponse.text();
+        const expansionLines = expansionText.split('\n');
+
+        const increaseText = await increaseResponse.text();
+        const increaseLines = increaseText.split('\n');
+
+        const lowRiskText = await lowRiskResponse.text();
+        const lowRiskLines = lowRiskText.split('\n');
+
+        const countyDataText = await countyDataResponse.text();
+        const countyDataLines = countyDataText.split('\n');
 
         expansionData = {};
-        for (let i = 1; i < lines.length; i++) {
-            const line = lines[i].trim();
+        expansionDataByNormalized = {};
+
+        for (let i = 1; i < expansionLines.length; i++) {
+            const line = expansionLines[i].trim();
             if (!line) continue;
 
             // County,Beds Needed,Old Risk
@@ -131,13 +188,214 @@ async function loadExpansionData() {
                 const county = parts[0].trim();
                 expansionData[county] = {
                     bedsNeeded: parts[1].trim(),
-                    oldRisk: parts[2].trim()
+                    oldRisk: parts[2].trim(),
+                    bedsToAdd10Years: null
                 };
+
+                expansionDataByNormalized[normalizeCountyName(county)] = expansionData[county];
+            }
+        }
+
+        for (let i = 1; i < increaseLines.length; i++) {
+            const line = increaseLines[i].trim();
+            if (!line) continue;
+
+            // COUNTY,Increase per 10 years
+            const parts = line.split(',');
+            if (parts.length >= 2) {
+                const county = parts[0].trim();
+                const bedsToAdd10Years = parseTenYearIncrease(parts[1]);
+                const normalizedCounty = normalizeCountyName(county);
+
+                if (!expansionDataByNormalized[normalizedCounty]) {
+                    expansionData[county] = {
+                        bedsNeeded: 'Unknown',
+                        oldRisk: 'Unknown',
+                        bedsToAdd10Years
+                    };
+                    expansionDataByNormalized[normalizedCounty] = expansionData[county];
+                } else {
+                    expansionDataByNormalized[normalizedCounty].bedsToAdd10Years = bedsToAdd10Years;
+                }
+            }
+        }
+
+        for (let i = 1; i < lowRiskLines.length; i++) {
+            const line = lowRiskLines[i].trim();
+            if (!line) continue;
+
+            // county,state,current_ob_beds,beds_required_for_low_risk,additional_beds_needed,already_low_risk
+            const parts = line.split(',');
+            if (parts.length >= 6) {
+                const county = parts[0].trim();
+                const additionalBedsNeeded = parts[4].trim();
+                const alreadyLowRisk = parts[5].trim().toUpperCase() === 'TRUE';
+                const normalizedCounty = normalizeCountyName(county);
+
+                if (!expansionDataByNormalized[normalizedCounty]) {
+                    expansionData[county] = {
+                        bedsNeeded: additionalBedsNeeded,
+                        oldRisk: 'Unknown',
+                        bedsToAdd10Years: null,
+                        alreadyLowRisk
+                    };
+                    expansionDataByNormalized[normalizedCounty] = expansionData[county];
+                } else {
+                    expansionDataByNormalized[normalizedCounty].bedsNeeded = additionalBedsNeeded;
+                    expansionDataByNormalized[normalizedCounty].alreadyLowRisk = alreadyLowRisk;
+                }
+            }
+        }
+
+        for (let i = 1; i < countyDataLines.length; i++) {
+            const line = countyDataLines[i].trim();
+            if (!line) continue;
+
+            // county,pct_late_no_prenatal_care,pct_births_in_state,state,ob_beds,level,avg_distance_miles,fips,risk_factor
+            const parts = line.split(',');
+            if (parts.length >= 6) {
+                const county = parts[0].trim();
+                const level = parts[5].trim();
+                const normalizedCounty = normalizeCountyName(county);
+
+                if (!expansionDataByNormalized[normalizedCounty]) {
+                    expansionData[county] = {
+                        bedsNeeded: 'Unknown',
+                        oldRisk: level || 'Unknown',
+                        bedsToAdd10Years: null
+                    };
+                    expansionDataByNormalized[normalizedCounty] = expansionData[county];
+                } else {
+                    expansionDataByNormalized[normalizedCounty].oldRisk = level || expansionDataByNormalized[normalizedCounty].oldRisk;
+                }
             }
         }
     } catch (err) {
         console.error('Error loading expansion data:', err);
     }
+}
+
+function normalizeCountyName(countyName) {
+    return (countyName || '').toLowerCase().replace(/[^a-z]/g, '');
+}
+
+function parseTenYearIncrease(value) {
+    const trimmedValue = (value || '').trim();
+    const parsedValue = Number.parseFloat(trimmedValue);
+    return Number.isFinite(parsedValue) ? parsedValue : null;
+}
+
+function createBedPinIcon(beds) {
+    const label = Number.isFinite(beds) && beds >= 0 ? String(Math.round(beds)) : '';
+    const svg = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="56" viewBox="0 0 36 56">
+            <path d="M18 2 C9.163 2 2 9.163 2 18 C2 28.5 18 40 18 40 C18 40 34 28.5 34 18 C34 9.163 26.837 2 18 2 Z"
+                fill="#0F9D9A" stroke="#333" stroke-width="2"/>
+            <circle cx="18" cy="17" r="9" fill="#fff" stroke="#333" stroke-width="1.5"/>
+            <text x="18" y="21" text-anchor="middle" font-size="10" font-weight="700" fill="#0F9D9A">${label}</text>
+            <text x="18" y="52" text-anchor="middle" font-size="10" font-weight="700" fill="#333">${label}</text>
+        </svg>`;
+
+    return L.divIcon({
+        html: svg,
+        className: '',
+        iconSize: [36, 56],
+        iconAnchor: [18, 52],
+        popupAnchor: [0, -52]
+    });
+}
+
+function clearExpansionPin(disablePlacement = true) {
+    if (expansionPinMarker && expansionMap) {
+        expansionMap.removeLayer(expansionPinMarker);
+    }
+    expansionPinMarker = null;
+    if (disablePlacement) {
+        expansionPinPlacementEnabled = false;
+    }
+}
+
+function placeExpansionPin(latlng) {
+    if (!activeExpansionCounty || !expansionPinPlacementEnabled) return;
+
+    const bedsInput = document.getElementById('new-beds');
+    const beds = bedsInput ? Number.parseFloat(bedsInput.value) : null;
+    if (!Number.isFinite(beds) || beds <= 0) return;
+
+    if (expansionPinMarker) {
+        expansionPinMarker.setLatLng(latlng);
+        expansionPinMarker.setIcon(createBedPinIcon(beds));
+    } else {
+        expansionPinMarker = L.marker(latlng, {
+            icon: createBedPinIcon(beds),
+            draggable: true
+        });
+        expansionPinMarker.addTo(expansionMap);
+        expansionPinMarker.on('dragend', (e) => {
+            placeExpansionPin(e.target.getLatLng());
+        });
+    }
+
+}
+
+function wireBedsInput() {
+    const bedsInput = document.getElementById('new-beds');
+    if (!bedsInput) return;
+
+    bedsInput.oninput = () => {
+        const beds = Number.parseFloat(bedsInput.value);
+        if (!Number.isFinite(beds) || beds <= 0) {
+            clearExpansionPin(false);
+            const updatedRiskSpan = document.getElementById('updated-risk-value');
+            if (updatedRiskSpan) {
+                updatedRiskSpan.textContent = '—';
+                updatedRiskSpan.className = 'value';
+                updatedRiskSpan.style.color = 'var(--text-muted)';
+            }
+            return;
+        }
+
+        // Calculate updated risk
+        if (activeCountyRiskData) {
+            const simulation = simulateBedsAndRisk(
+                activeCountyRiskData.prenatalPct,
+                activeCountyRiskData.birthsPct,
+                activeCountyRiskData.currentObBeds,
+                activeCountyRiskData.currentRiskFactor,
+                beds
+            );
+
+            const updatedRiskSpan = document.getElementById('updated-risk-value');
+            if (updatedRiskSpan) {
+                updatedRiskSpan.textContent = simulation.simulatedLevel;
+                const riskClassName = `risk-${simulation.simulatedLevel.replace(/\s+/g, '')}`;
+                updatedRiskSpan.className = `value ${riskClassName}`;
+                updatedRiskSpan.style.padding = '0.2rem 0.5rem';
+                updatedRiskSpan.style.borderRadius = '4px';
+                updatedRiskSpan.style.display = 'inline-block';
+                updatedRiskSpan.style.color = '';
+            }
+        }
+
+        if (expansionPinMarker) {
+            expansionPinMarker.setIcon(createBedPinIcon(beds));
+        }
+    };
+}
+
+function wireAddCenterButton() {
+    const addCenterButton = document.getElementById('add-center-btn');
+    const bedsInput = document.getElementById('new-beds');
+    if (!addCenterButton || !bedsInput) return;
+
+    addCenterButton.onclick = () => {
+        const beds = Number.parseFloat(bedsInput.value);
+        if (!Number.isFinite(beds) || beds <= 0) {
+            bedsInput.focus();
+            return;
+        }
+        expansionPinPlacementEnabled = true;
+    };
 }
 
 function renderExpansionCounties() {
@@ -155,7 +413,14 @@ function renderExpansionCounties() {
 
             // Click to populate sidebar
             layer.on({
-                click: (e) => selectExpansionCounty(e.target, feature.properties.NAME)
+                click: (e) => {
+                    if (expansionPinPlacementEnabled && activeExpansionCounty === e.target) {
+                        placeExpansionPin(e.latlng);
+                        return;
+                    }
+                    selectExpansionCounty(e.target, feature.properties.NAME);
+                    placeExpansionPin(e.latlng);
+                }
             });
         }
     }).addTo(expansionMap);
@@ -167,8 +432,27 @@ function selectExpansionCounty(layer, countyName) {
         expansionGeoJsonLayer.resetStyle(activeExpansionCounty);
     }
 
+    if (activeExpansionCounty && activeExpansionCounty !== layer) {
+        clearExpansionPin();
+    }
+
+    // Populate Sidebar
+    const data = expansionData[countyName]
+        || expansionDataByNormalized[normalizeCountyName(countyName)]
+        || { bedsNeeded: 'Unknown', oldRisk: 'Unknown', bedsToAdd10Years: null };
+
+    // Store risk data for dynamic calculation
+    const homeData = homeCountyData[countyName] || {};
+    activeCountyRiskData = {
+        prenatalPct: parseFloat(homeData.noPrenatalCare) || 0,
+        birthsPct: parseFloat(homeData.birthPct) || 0,
+        currentObBeds: parseInt(homeData.obBeds) || 0,
+        currentRiskFactor: parseFloat(homeData.riskFactor) || 0,
+        oldRiskLevel: data.oldRisk
+    };
+
     // Highlight new layer
-    highlightFeature(layer);
+    highlightFeature(layer, data.oldRisk);
     activeExpansionCounty = layer;
 
     // Zoom to county
@@ -178,14 +462,18 @@ function selectExpansionCounty(layer, countyName) {
         animate: true
     });
 
-    // Populate Sidebar
-    const data = expansionData[countyName] || { bedsNeeded: 'Unknown', oldRisk: 'Unknown' };
+    const tenYearBedsMarkup = Number.isFinite(data.bedsToAdd10Years)
+        ? (data.bedsToAdd10Years > 0
+            ? `<div class="beds-needed">OB beds per 100 births (10-yr): ${data.bedsToAdd10Years.toFixed(2)}</div>`
+            : `<div class="beds-needed">No additional Beds needed.</div>`)
+        : '';
 
     const sidebarContent = document.getElementById('expansion-sidebar-content');
     sidebarContent.innerHTML = `
         <div class="expansion-card-header">
             <h2>${countyName} County</h2>
             <div class="beds-needed">Beds Needed: ${data.bedsNeeded}</div>
+            ${tenYearBedsMarkup}
         </div>
 
         <div class="add-center-section">
@@ -201,6 +489,7 @@ function selectExpansionCounty(layer, countyName) {
                 <label for="new-beds">Number of Beds:</label>
                 <input type="number" id="new-beds" placeholder="Enter planned beds..." min="0">
             </div>
+            <button type="button" id="add-center-btn" class="add-center-btn">Add Center</button>
         </div>
 
         <div class="risk-comparison">
@@ -210,10 +499,13 @@ function selectExpansionCounty(layer, countyName) {
             </div>
             <div class="risk-box">
                 <span class="label">Updated Risk</span>
-                <span class="value" style="color: var(--text-muted); font-weight: normal;">&mdash;</span>
+                <span id="updated-risk-value" class="value" style="color: var(--text-muted); font-weight: normal;">&mdash;</span>
             </div>
         </div>
     `;
+
+    wireBedsInput();
+    wireAddCenterButton();
 
     // Optionally handle input change to calculate updated risk here
 }
@@ -236,14 +528,92 @@ function style(feature) {
 }
 
 // Function to highlight a feature
-function highlightFeature(layer) {
+function highlightFeature(layer, riskLevel) {
+    const riskColor = getRiskColor(riskLevel);
+    const riskGradient = getRiskGradientFill(layer, riskLevel);
     layer.setStyle({
         weight: 2.5,
-        color: '#e8614f',
-        fillOpacity: 0.45,
-        fillColor: '#0F9D9A'
+        color: riskColor,
+        fillOpacity: 0.6,
+        fillColor: riskGradient
     });
     layer.bringToFront();
+}
+
+function normalizeRiskLevel(level) {
+    return (level || '').toLowerCase().replace(/\s+/g, '');
+}
+
+function getRiskColor(level) {
+    const normalized = normalizeRiskLevel(level);
+    if (normalized === 'low') return '#2ECC71';
+    if (normalized === 'moderate' || normalized === 'medium') return '#F1C40F';
+    if (normalized === 'high') return '#E67E22';
+    if (normalized === 'veryhigh') return '#E74C3C';
+    if (normalized === 'critical') return '#8E2B0E';
+    return '#0F9D9A';
+}
+
+function getRiskGradientFill(layer, level) {
+    const normalized = normalizeRiskLevel(level) || 'default';
+    const svg = getOverlaySvg(layer);
+    if (!svg) return getRiskColor(level);
+
+    const gradientId = `risk-gradient-${normalized}`;
+    let defs = svg.querySelector('defs');
+    if (!defs) {
+        defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+        svg.insertBefore(defs, svg.firstChild);
+    }
+
+    if (!svg.querySelector(`#${gradientId}`)) {
+        const baseColor = getRiskColor(level);
+        const lightColor = toGradientLight(baseColor);
+        const gradient = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
+        gradient.setAttribute('id', gradientId);
+        gradient.setAttribute('x1', '0%');
+        gradient.setAttribute('y1', '0%');
+        gradient.setAttribute('x2', '100%');
+        gradient.setAttribute('y2', '100%');
+
+        const stopStart = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+        stopStart.setAttribute('offset', '0%');
+        stopStart.setAttribute('stop-color', lightColor);
+        stopStart.setAttribute('stop-opacity', '0.95');
+
+        const stopEnd = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+        stopEnd.setAttribute('offset', '100%');
+        stopEnd.setAttribute('stop-color', baseColor);
+        stopEnd.setAttribute('stop-opacity', '0.95');
+
+        gradient.appendChild(stopStart);
+        gradient.appendChild(stopEnd);
+        defs.appendChild(gradient);
+    }
+
+    return `url(#${gradientId})`;
+}
+
+function getOverlaySvg(layer) {
+    if (!layer || !layer._map) return null;
+    return layer._map.getPanes().overlayPane.querySelector('svg');
+}
+
+function toGradientLight(hexColor) {
+    const rgb = hexToRgb(hexColor);
+    if (!rgb) return hexColor;
+    const mix = (channel) => Math.min(255, Math.round(channel + (255 - channel) * 0.45));
+    return `rgb(${mix(rgb.r)}, ${mix(rgb.g)}, ${mix(rgb.b)})`;
+}
+
+function hexToRgb(hexColor) {
+    const normalized = (hexColor || '').replace('#', '');
+    if (normalized.length !== 6) return null;
+    const r = Number.parseInt(normalized.slice(0, 2), 16);
+    const g = Number.parseInt(normalized.slice(2, 4), 16);
+    const b = Number.parseInt(normalized.slice(4, 6), 16);
+    if ([r, g, b].some((value) => Number.isNaN(value))) return null;
+    return { r, g, b };
 }
 
 // Click interaction
@@ -265,7 +635,9 @@ function selectCounty(layer, props, skipZoom = false) {
         geojson.resetStyle(clickedLayer);
     }
     clickedLayer = layer;
-    highlightFeature(clickedLayer);
+    const countyName = props.NAME;
+    const data = homeCountyData[countyName] || {};
+    highlightFeature(clickedLayer, data.level);
     updateInfoPanel(props);
 
     if (!skipZoom) {
@@ -394,20 +766,19 @@ async function loadData() {
 
         // 2. Load Data from global constants (data.js)
         allHospitals = HOSPITALS_DATA.elements;
-        maternalHospitals = parseMaternalCSV(MATERNAL_CSV_DATA);
 
-        // 4. Match and Map
+        // 3. Load Updated ob_hospitals_with_level.csv BEFORE processing markers
+        const hospitalDataResponse = await fetch('Updated ob_hospitals_with_level(ob_hospitals_with_level).csv');
+        const hospitalDataText = await hospitalDataResponse.text();
+        parseHospitalMetrics(hospitalDataText);
+
+        // 4. Match and Map (now using hospital CSV data)
         processMaternalMarkers();
 
         // 5. Load county_data.csv for Home sidebar
         const countyDataResponse = await fetch('county_data.csv');
         const countyDataText = await countyDataResponse.text();
         parseHomeCountyData(countyDataText);
-
-        // 6. Load hospital_data.csv for detailed hospital metrics
-        const hospitalDataResponse = await fetch('hospital_data.csv');
-        const hospitalDataText = await hospitalDataResponse.text();
-        parseHospitalMetrics(hospitalDataText);
 
         // 7. Setup Search
         setupSearch();
@@ -428,13 +799,15 @@ function parseHomeCountyData(text) {
         if (!line) continue;
 
         const parts = line.split(',');
-        if (parts.length >= 7) {
+        if (parts.length >= 9) {
             const county = parts[0].trim();
             homeCountyData[county] = {
                 noPrenatalCare: parts[1].trim(),
+                birthPct: parts[2].trim(),
                 obBeds: parts[4].trim(),
                 level: parts[5].trim(),
-                avgDistance: parts[6].trim()
+                avgDistance: parts[6].trim(),
+                riskFactor: parts[8].trim()
             };
         }
     }
@@ -443,21 +816,51 @@ function parseHomeCountyData(text) {
 function parseHospitalMetrics(text) {
     const lines = text.split('\n');
     hospitalMetrics = {};
+    maternalHospitals = []; // Populate directly from hospital CSV
 
-    // Header: Hospital Name,County,Hospital Bed Size,OB Beds,Total Births
+    // Header: Hospital Name,county,level,Address,Number of OB Beds,Total Births
     for (let i = 1; i < lines.length; i++) {
         const line = lines[i].trim();
         if (!line) continue;
 
         // Handle quoted fields (e.g., "3,023")
         const parts = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-        if (parts.length >= 5) {
+        if (parts.length >= 6) {
             const name = parts[0].replace(/"/g, '').trim();
+            const county = parts[1].replace(/"/g, '').trim();
+            const levelRaw = parts[2].replace(/"/g, '').trim();
+            const address = parts[3].replace(/"/g, '').trim();
+            const obBeds = parts[4].replace(/"/g, '').trim();
+            const totalBirths = parts[5].replace(/"/g, '').trim();
+            
+            // Map raw level numbers to level names
+            const levelMap = { '1': 'Level I', '2': 'Level II', '3': 'Level III', '4': 'Level IV' };
+            const level = levelMap[levelRaw] || '';
+            
             const normalizedName = normalizeHospitalName(name);
+            
             hospitalMetrics[normalizedName] = {
-                obBeds: parts[3].replace(/"/g, '').trim(),
-                totalBirths: parts[4].replace(/"/g, '').trim()
+                name: name,
+                county: county,
+                level: level,
+                address: address,
+                obBeds: obBeds,
+                totalBirths: totalBirths
             };
+            
+            // Add to maternalHospitals directly from CSV
+            if (name && county) {
+                maternalHospitals.push({
+                    name: name,
+                    county: county,
+                    level: level,
+                    address: address,
+                    obBeds: obBeds,
+                    totalBirths: totalBirths,
+                    lat: null,
+                    lon: null
+                });
+            }
         }
     }
 }
@@ -547,8 +950,11 @@ function processMaternalMarkers() {
     maternalHospitals.forEach(mh => {
         const normalizedMhName = normalizeHospitalName(mh.name);
 
-        // Find coordinates in OSM data
-        const osm = allHospitals.find(h => {
+        // Find coordinates in OSM data using improved matching
+        let osm = null;
+        
+        // First pass: Try name matching
+        osm = allHospitals.find(h => {
             if (!h.tags.name) return false;
             const normalizedOsmName = normalizeHospitalName(h.tags.name);
 
@@ -558,10 +964,30 @@ function processMaternalMarkers() {
             return normalizedOsmName.includes(normalizedMhName) || normalizedMhName.includes(normalizedOsmName);
         });
 
+        // If no match, try county + city matching using address
+        if (!osm && mh.address) {
+            // Extract city from address (usually between street and zip)
+            const addressParts = mh.address.split(',');
+            const mhCity = addressParts.length > 1 ? addressParts[1].trim() : '';
+            
+            osm = allHospitals.find(h => {
+                if (!h.tags.name) return false;
+                
+                const osmCity = h.tags['addr:city'] || '';
+                const normalizedOsmName = normalizeHospitalName(h.tags.name);
+                
+                // Match if city matches and name is reasonable length
+                return mhCity.toLowerCase() === osmCity.toLowerCase() && normalizedOsmName.length > 3;
+            });
+        }
+
         if (osm) {
             mh.lat = osm.center ? osm.center.lat : osm.lat;
             mh.lon = osm.center ? osm.center.lon : osm.lon;
-            mh.address = formatAddress(osm.tags);
+            
+            if (!mh.address) {
+                mh.address = formatAddress(osm.tags);
+            }
 
             const color = getLevelColor(mh.level);
             const marker = L.marker([mh.lat, mh.lon], {
@@ -576,6 +1002,9 @@ function processMaternalMarkers() {
             });
 
             hospitalMarkers.addLayer(marker);
+            console.log(`✓ Placed ${mh.name} at [${mh.lat}, ${mh.lon}]`);
+        } else {
+            console.warn(`⚠ No OSM location found for: ${mh.name} in ${mh.county}`);
         }
     });
 }

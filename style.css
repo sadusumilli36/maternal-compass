@@ -674,6 +674,27 @@ footer {
     font-weight: 600;
 }
 
+/* Risk level color classes */
+.risk-Low {
+    color: #2ECC71;
+}
+
+.risk-Moderate {
+    color: #F1C40F;
+}
+
+.risk-High {
+    color: #E67E22;
+}
+
+.risk-VeryHigh {
+    color: #E74C3C;
+}
+
+.risk-Critical {
+    color: #8E2B0E;
+}
+
 @media (max-width: 900px) {
     main {
         grid-template-columns: 1fr;
