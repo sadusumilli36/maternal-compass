@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MaternalCompass - Georgia Explorer</title>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="app-container">
+        <nav class="main-nav">
+            <div class="nav-brand">
+                <img src="logo.png" alt="MaternalCompass Logo" class="nav-logo">
+                <span class="brand-gradient">MaternalCompass</span>
+            </div>
+            <ul class="nav-links">
+                <li class="active" data-tab="home">Home</li>
+                <li data-tab="add">Expansion Plan</li>
+                <li data-tab="chatbot">Chatbot</li>
+                <li data-tab="about">About</li>
+            </ul>
+        </nav>
+
+        <!-- Home Tab -->
+        <section id="home-tab" class="tab-content active">
+            <header>
+                <h1>
+                    <img src="logo.png" alt="MaternalCompass Logo" class="header-logo">
+                    <span class="brand-gradient">MaternalCompass</span>
+                </h1>
+                <p>Click on any county or medical center to view relevant statistics. You can also search for a specific county or facility using the search bar.</p>
+
+                <div id="search-section">
+                    <div class="search-container">
+                        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8" />
+                            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                        </svg>
+                        <input type="text" id="hospital-search" placeholder="Search hospitals or counties..."
+                            autocomplete="off">
+                    </div>
+                    <div id="search-results" class="glass-panel hidden"></div>
+                </div>
+            </header>
+
+            <h2 style="text-align: center; margin: 1.5rem 0 1rem 0; font-size: 1.5rem; color: var(--primary);">Obstetric Map of Georgia</h2>
+
+            <main>
+                <div id="map"></div>
+
+                <div id="info-panel" class="glass-panel">
+                    <div id="info-content">
+                        <div class="placeholder-msg">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10" />
+                                <path d="M12 16v-4" />
+                                <path d="M12 8h.01" />
+                            </svg>
+                            <h3>Select a County</h3>
+                            <p>Click on the map to see specific information about a county in Georgia.</p>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <div style="margin-top: 3rem; padding: 0 5%;">
+                <div class="glass-panel" style="padding: 1.5rem;">
+                    <h3 style="margin: 0 0 1rem 0; color: var(--primary);">Facility Levels</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                        <div>
+                            <p style="margin: 0 0 0.5rem 0; font-weight: 600;">Level I</p>
+                            <p style="margin: 0; color: var(--text-muted);">Basic</p>
+                        </div>
+                        <div>
+                            <p style="margin: 0 0 0.5rem 0; font-weight: 600;">Level II</p>
+                            <p style="margin: 0; color: var(--text-muted);">Specialty</p>
+                        </div>
+                        <div>
+                            <p style="margin: 0 0 0.5rem 0; font-weight: 600;">Level III</p>
+                            <p style="margin: 0; color: var(--text-muted);">Subspecialty</p>
+                        </div>
+                        <div>
+                            <p style="margin: 0 0 0.5rem 0; font-weight: 600;">Level IV</p>
+                            <p style="margin: 0; color: var(--text-muted);">Regional Perinatal Center</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- About Tab -->
+        <section id="about-tab" class="tab-content">
+            <article class="about-container glass-panel">
+                <h2>About MaternalCompass</h2>
+                <div class="about-grid">
+                    <div class="about-text">
+                        <p><strong>MaternalCompass</strong> is a data-driven visualization tool
+                            designed to help families and healthcare professionals locate and understand the maternal
+                            care resources available across Georgia.</p>
+                        <p>By integrating official maternal care facility listings with precise geographic data, this
+                            project aims to provide transparency into the different levels of care (I-IV) provided by
+                            Georgia's birthing centers.</p>
+                        <h3>Key Objectives</h3>
+                        <ul>
+                            <li><strong>Accessibility</strong>: Pinpoint care facilities with accurate coordinates and
+                                addresses.</li>
+                            <li><strong>Education</strong>: Explain and visualize the Levels of Care (I through IV) to
+                                help families find the most appropriate facility.</li>
+                            <li><strong>Insight</strong>: Highlight county-level resource distribution to identify areas
+                                of high or low coverage.</li>
+                        </ul>
+                    </div>
+                    <div class="about-stats">
+                        <div class="stat-card">
+                            <span class="stat-value">159</span>
+                            <span class="stat-label">Counties Tracked</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-value">60+</span>
+                            <span class="stat-label">Facilities Mapped</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-value">IV</span>
+                            <span class="stat-label">Highest Care Level</span>
+                        </div>
+                    </div>
+                </div>
+            </article>
+        </section>
+
+        <!-- Chatbot Tab -->
+        <section id="chatbot-tab" class="tab-content">
+            <div class="chatbot-container">
+                <div class="chatbot-header">
+                    <h2>🤖 MaternalCompass AI Assistant</h2>
+                    <p>Ask me anything about maternal healthcare data in Georgia</p>
+                </div>
+                
+                <div class="suggested-prompts" id="suggested-prompts">
+                    <!-- Populated dynamically -->
+                </div>
+                
+                <div class="chat-messages" id="chat-messages">
+                    <div class="bot-message">
+                        <strong>MaternalCompass AI:</strong> Hi! I'm here to help you explore maternal healthcare data in Georgia. Click a suggested question or ask your own!
+                    </div>
+                </div>
+                
+                <div class="chat-input-container">
+                    <input type="text" id="chat-input" placeholder="Ask about counties, hospitals, risk levels..." />
+                    <button id="send-chat">Send</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Expansion Plan Tab -->
+        <section id="add-tab" class="tab-content">
+            <header>
+                <h2>Expansion Plan</h2>
+                <p>Select a county on the map to evaluate existing deficits and propose new maternal care centers.</p>
+            </header>
+            <main class="expansion-container">
+                <div id="expansion-sidebar" class="glass-panel">
+                    <div id="expansion-sidebar-content">
+                        <div class="placeholder-msg">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="9" y1="3" x2="9" y2="21"></line>
+                            </svg>
+                            <h3>Select a County</h3>
+                            <p>Click on the map to begin planning an expansion for that county.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="expansion-map"></div>
+            </main>
+        </section>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <!-- Custom JS -->
+    <script src="data.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,151 @@
+county,pct_late_no_prenatal_care,pct_births_in_state,state,ob_beds,level,avg_distance_miles,fips,risk_factor
+Walker,91,0.6,GA,0,Very High,19.43,,54.6
+Catoosa,92.3,0.5,GA,0,Very High,10.95,,46.15
+Clay,36.4,1,GA,0,Very High,43.27,,36.4
+Echols,31.8,1,GA,0,Very High,22.88,,31.8
+Calhoun,24.4,1,GA,0,Very High,27.25,,24.4
+Hancock,22.8,1,GA,0,Very High,19.41,,22.8
+Columbia,15,1.4,GA,0,Very High,9.84,,21
+Warren,18.6,1,GA,0,Very High,34.88,,18.6
+Paulding,9.6,1.7,GA,0,Very High,14.26,,16.32
+Carroll,12.5,1.2,GA,0,Very High,19.92,,15
+Wheeler,12.5,1,GA,0,Very High,25.05,,12.5
+Taylor,11.3,1,GA,0,Very High,23.02,,11.3
+Effingham,15.6,0.7,GA,0,Very High,25.74,,10.92
+Schley,10.4,1,GA,0,Very High,13.02,,10.4
+Dade,96.1,0.1,GA,0,Very High,29.88,,9.61
+Murray,20.6,0.4,GA,0,Very High,14.15,,8.24
+Barrow,7.6,1,GA,0,Very High,13.2,,7.6
+Polk,14.2,0.5,GA,0,Very High,17.24,,7.1
+Chattooga,30.9,0.2,GA,0,Very High,17.22,,6.18
+Jackson,6,0.9,GA,0,Very High,15.34,,5.4
+Bryan,12.7,0.4,GA,0,Very High,15.34,,5.08
+Clayton,24.4,2.9,GA,14,Very High,4.42,,5.054
+Gilmer,16.7,0.3,GA,0,Very High,15.39,,5.01
+McDuffie,22.6,0.2,GA,0,Very High,22.5,,4.52
+Hart,20.6,0.2,GA,0,Very High,12.43,,4.12
+Long,13.4,0.3,GA,0,Very High,10.17,,4.02
+Charlton,37.6,0.1,GA,0,Very High,27.49,,3.76
+Mitchell,18.1,0.2,GA,0,Very High,22.74,,3.62
+Brooks,17.8,0.2,GA,0,Very High,19.67,,3.56
+Early,35.6,0.1,GA,0,Very High,27.27,,3.56
+Lee,11.2,0.3,GA,0,Very High,11.9,,3.36
+Burke,16.7,0.2,GA,0,Very High,24.49,,3.34
+Harris,10.5,0.3,GA,0,Very High,16.98,,3.15
+Haralson,10.3,0.3,GA,0,Very High,25.83,,3.09
+Liberty,11.9,1,GA,4,Very High,7.38,,2.975
+Miller,29.2,0.1,GA,0,Very High,16.55,,2.92
+Stephens,14.4,0.2,GA,0,Very High,12.15,,2.88
+Cook,14.3,0.2,GA,0,Very High,20.62,,2.86
+Jefferson,26.9,0.1,GA,0,High,31.13,,2.69
+Berrien,13.2,0.2,GA,0,High,20.76,,2.64
+Pierce,13,0.2,GA,0,High,10.55,,2.6
+Butts,12.6,0.2,GA,0,High,18.73,,2.52
+Putnam,12.1,0.2,GA,0,High,16.9,,2.42
+Henry,20,2.1,GA,18,High,6.63,,2.333
+Lincoln,23.2,0.1,GA,0,High,29.2,,2.32
+Appling,11.3,0.2,GA,0,High,17.48,,2.26
+Madison,7,0.3,GA,0,High,17.13,,2.1
+DeKalb,16.5,7.7,GA,62,High,4.32,,2.049
+Ben Hill,9.9,0.2,GA,0,High,24.25,,1.98
+Worth,9.8,0.2,GA,0,High,17.5,,1.96
+Camden,35.9,0.6,GA,11,High,10.27,,1.958
+Peach,9.6,0.2,GA,0,High,13.36,,1.92
+Gwinnett,12.1,9.2,GA,59,High,0.53,,1.887
+Marion,18.8,0.1,GA,0,High,21.05,,1.88
+Towns,18.2,0.1,GA,0,High,22.33,,1.82
+Emanuel,9.1,0.2,GA,0,High,33.04,,1.82
+Douglas,13.7,1.3,GA,10,High,0,,1.781
+Meriwether,8.5,0.2,GA,0,High,22.1,,1.7
+Tattnall,8.3,0.2,GA,0,High,17.5,,1.66
+Dawson,5.5,0.3,GA,0,High,15.84,,1.65
+Jeff Davis,8,0.2,GA,0,High,20.52,,1.6
+Lamar,7.9,0.2,GA,0,High,15.43,,1.58
+Brantley,7.8,0.2,GA,0,High,21.05,,1.56
+Jenkins,15.6,0.1,GA,0,High,27.48,,1.56
+Elbert,7.7,0.2,GA,0,High,27.71,,1.54
+Monroe,7.3,0.2,GA,0,High,18.65,,1.46
+Banks,7,0.2,GA,0,High,18.4,,1.4
+Washington,13.9,0.1,GA,0,High,29.64,,1.39
+Oglethorpe,6.8,0.2,GA,0,High,18.03,,1.36
+Lanier,13.6,0.1,GA,0,High,18.28,,1.36
+Bartow,11.3,1.2,GA,10,High,0,,1.356
+Evans,13.5,0.1,GA,0,High,18.99,,1.35
+Cherokee,11.6,2.7,GA,24,High,0.82,,1.305
+Jones,6.5,0.2,GA,0,High,12.07,,1.3
+Oconee,4.2,0.3,GA,0,High,8.22,,1.26
+Lumpkin,4.1,0.3,GA,0,Moderate,9.69,,1.23
+Grady,29.8,0.2,GA,5,Moderate,0,,1.192
+Dooly,11.1,0.1,GA,0,Moderate,12.44,,1.11
+Wilkes,11.1,0.1,GA,0,Moderate,39.77,,1.11
+Screven,10.8,0.1,GA,0,Moderate,25.36,,1.08
+Rockdale,14.5,0.8,GA,11,Moderate,0,,1.055
+White,5.1,0.2,GA,0,Moderate,14.7,,1.02
+Pike,5.1,0.2,GA,0,Moderate,13.93,,1.02
+Wilcox,10.1,0.1,GA,0,Moderate,20.2,,1.01
+Wilkinson,9.8,0.1,GA,0,Moderate,21.12,,0.98
+McIntosh,9.7,0.1,GA,0,Moderate,22.86,,0.97
+Terrell,9.6,0.1,GA,0,Moderate,20.44,,0.96
+Cobb,13.4,6.9,GA,97,Moderate,0,,0.953
+Chattahoochee,9.5,0.1,GA,0,Moderate,10.98,,0.95
+Habersham,9.4,0.4,GA,4,Moderate,0,,0.94
+Candler,9.3,0.1,GA,0,Moderate,18.86,,0.93
+Colquitt,18.6,0.5,GA,10,Moderate,3.79,,0.93
+Twiggs,9.2,0.1,GA,0,Moderate,16.92,,0.92
+Walton,6.4,1,GA,7,Moderate,2.5,,0.914
+Bleckley,9.1,0.1,GA,0,Moderate,17.71,,0.91
+Johnson,9.1,0.1,GA,0,Moderate,21.37,,0.91
+Whitfield,25.3,1,GA,28,Moderate,0.79,,0.904
+Rabun,9,0.1,GA,0,Moderate,17.94,,0.9
+Clinch,8.8,0.1,GA,0,Moderate,30.58,,0.88
+Macon,8.7,0.1,GA,0,Moderate,22.57,,0.87
+Newton,11,1.1,GA,14,Moderate,2.07,,0.864
+Randolph,8.6,0.1,GA,0,Moderate,35.72,,0.86
+Morgan,4.2,0.2,GA,0,Moderate,19.82,,0.84
+Atkinson,8.4,0.1,GA,0,Moderate,14.37,,0.84
+Bacon,16.4,0.1,GA,2,Moderate,0,,0.82
+Gordon,16.2,0.5,GA,10,Moderate,1.72,,0.81
+Crawford,8.1,0.1,GA,0,Moderate,17.84,,0.81
+Chatham,22.6,2.9,GA,82,Moderate,4.62,,0.799
+Turner,7.8,0.1,GA,0,Moderate,17.78,,0.78
+Fannin,3.9,0.2,GA,0,Moderate,19.44,,0.78
+Houston,9.7,1.6,GA,20,Moderate,0,,0.776
+Decatur,20.6,0.3,GA,8,Moderate,0,,0.773
+Dodge,7.7,0.1,GA,0,Low,28.81,,0.77
+Thomas,21,0.4,GA,11,Low,3.26,,0.764
+Greene,7.3,0.1,GA,0,Low,30.7,,0.73
+Troup,16.2,0.7,GA,16,Low,2.02,,0.709
+Seminole,27.9,0.1,GA,4,Low,0,,0.698
+Heard,6.9,0.1,GA,0,Low,17.26,,0.69
+Lowndes,15.7,1.2,GA,28,Low,0.15,,0.673
+Telfair,6.1,0.1,GA,0,Low,28.37,,0.61
+Jasper,5.7,0.1,GA,0,Low,21.17,,0.57
+Pulaski,5.7,0.1,GA,0,Low,18.7,,0.57
+Coweta,7.1,1.4,GA,18,Low,0.52,,0.552
+Irwin,5.2,0.1,GA,0,Low,15.23,,0.52
+Fayette,8.8,0.7,GA,12,Low,4.42,,0.513
+Floyd,13.1,0.9,GA,24,Low,0,,0.491
+Hall,12.4,2.5,GA,65,Low,0.97,,0.477
+Pickens,6.3,0.3,GA,4,Low,0,,0.472
+Richmond,22.5,2.1,GA,101,Low,0,,0.468
+Franklin,8.9,0.3,GA,6,Low,6.97,,0.445
+Toombs,7.2,0.3,GA,5,Low,0,,0.432
+Union,8.2,0.2,GA,4,Low,8.82,,0.41
+Spalding,12.8,0.6,GA,20,Low,0,,0.384
+Forsyth,6,2,GA,32,Low,3.98,,0.375
+Fulton,15.3,8.8,GA,365,Low,0,,0.369
+Coffee,5.4,0.4,GA,6,Low,1.93,,0.36
+Sumter,10.5,0.3,GA,10,Low,4.23,,0.315
+Dougherty,11.2,0.8,GA,29,Low,4,,0.309
+Glynn,10.5,0.7,GA,24,Low,3.01,,0.306
+Bulloch,8.8,0.7,GA,21,Low,2.56,,0.293
+Ware,9.7,0.3,GA,13,Low,8.75,,0.224
+Wayne,8.7,0.3,GA,12,Low,2.42,,0.218
+Tift,11.1,0.5,GA,26,Low,1.78,,0.213
+Muscogee,10.2,2,GA,102,Low,0,,0.2
+Bibb,9.4,1.5,GA,73,Low,0,,0.193
+Laurens,7.6,0.5,GA,21,Low,7.48,,0.181
+Upson,8.9,0.2,GA,10,Low,3.06,,0.178
+Baldwin,13.2,0.3,GA,24,Low,0,,0.165
+Crisp,6.1,0.2,GA,8,Low,4.3,,0.152
+Clarke,6.9,1,GA,54,Low,2.71,,0.128
